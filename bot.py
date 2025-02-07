@@ -38,7 +38,7 @@ async def save_image(client: Client, message: Message):
     await message.download(file_path)
 
     # Generate image URL
-    image_url = f"https://jnmovies.site/uploads/{file_name}"
+    image_url = f"https://jnmovies.site/wp-content/uploads/{file_name}"
 
     # Send the image URL to the user
     await message.reply_text(f"✅ Your image has been uploaded: {image_url}")
