@@ -9,8 +9,7 @@ API_HASH = os.getenv("API_HASH", "3037d39233c6fad9b80d83bb8a339a07")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "6677023637:AAES7_yErqBDZY7wQP1EOyIGhpAN1d9fY5o")
 
 # Directory to save images
-UPLOAD_FOLDER = "/home/wwwroot/jnmovies.site/uploads/"
-
+UPLOAD_FOLDER = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
