@@ -19,7 +19,7 @@ app = Client("ImageHostBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOK
 @app.on_message(filters.photo)
 async def save_image(client: Client, message: Message):
     """Handles image uploads from users"""
-    photo = message.photo[-1]  # Get the highest resolution image
+    photo = message.photo # Get the highest resolution image
     file_name = message.caption if message.caption else f"{photo.file_id}.jpg"
 
     # Sanitize filename
