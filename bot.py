@@ -1,7 +1,6 @@
 import os
-import asyncio
+import requests
 from pyrogram import Client, filters
-from pyrogram.types import Message
 
 # Load configuration from environment variables
 API_ID = int(os.getenv("API_ID", "15191874"))
@@ -10,38 +9,35 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "6677023637:AAES7_yErqBDZY7wQP1EOyIGhpAN1d9fY
 
 # Directory to save images
 UPLOAD_FOLDER = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
-# Ensure upload folder exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Initialize Pyrogram Client
-app = Client("ImageHostBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Initialize the Pyrogram client
+app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-@app.on_message(filters.photo)
-async def save_image(client: Client, message: Message):
-    """Handles image uploads from users"""
-    photo = message.photo # Get the highest resolution image
-    file_name = message.caption if message.caption else f"{photo.file_id}.jpg"
+# Function to download an image from a URL
+def download_image(url, file_name):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(file_name, "wb") as file:
+            file.write(response.content)
+        return True
+    return False
 
-    # Sanitize filename
-    file_name = file_name.replace(" ", "_").replace("/", "_")
+# Handler for messages containing a URL
+@app.on_message(filters.text & filters.private)
+async def handle_message(client, message):
+    url = message.text.strip()
+    if url.startswith("http"):
+        # Download the image
+        file_name = "downloaded_image.jpg"
+        if download_image(url, file_name):
+            # Send the image back to the user
+            await message.reply_photo(file_name)
+            os.remove(file_name)  # Clean up the file
+        else:
+            await message.reply_text("Failed to download the image. Please check the URL.")
+    else:
+        await message.reply_text("Please send a valid image URL.")
 
-    # Check if file already exists and rename if necessary
-    base_name, ext = os.path.splitext(file_name)
-    counter = 1
-    while os.path.exists(os.path.join(UPLOAD_FOLDER, file_name)):
-        file_name = f"{base_name}_{counter}{ext}"
-        counter += 1
-
-    file_path = os.path.join(UPLOAD_FOLDER, file_name)
-
-    # Download the image
-    await message.download(file_path)
-
-    # Generate image URL
-    image_url = f"https://jnmovies.site/wp-content/uploads/{file_name}"
-
-    # Send the image URL to the user
-    await message.reply_text(f"✅ Your image has been uploaded: {image_url}")
-
-# Run the bot
+# Start the bot
+print("Bot is running...")
 app.run()
