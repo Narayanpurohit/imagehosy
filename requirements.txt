@@ -1,4 +1,6 @@
+
 pyrogram
-tgcrypto
-requests 
+requests
+aiohttp
 imdbpy
+python-dotenv
