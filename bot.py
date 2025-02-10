@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Bot Configuration
-BOT_TOKEN = "7727908791:AAFz7vFBuJTfcRneBEJmceTy775xIjH2MPY"
+BOT_TOKEN = "7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk"
 API_ID = int("15191874")
 API_HASH = "3037d39233c6fad9b80d83bb8a339a07"
 
@@ -26,7 +26,7 @@ os.makedirs(IMDB_DIR, exist_ok=True)
 os.makedirs(USER_DIR, exist_ok=True)
 
 # Initialize bot
-bot = Client("ImageHostBot", bot_token=BOT_TOKEN, api_id=API_ID, api_hash=API_HASH)
+bot = Client("ImageHostBot", bot_token="7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk", api_id=15191874, api_hash="3037d39233c6fad9b80d83bb8a339a07")
 imdb = IMDb()
 
 # Function to generate unique filenames
