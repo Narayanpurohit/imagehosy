@@ -1,71 +1,98 @@
-
-# Directory to save the downloaded images
 import os
+import re
 import requests
+import asyncio
 from pyrogram import Client, filters
-from cinemagoer import IMDb  # CinemaPy (IMDbPY fork)
+from pyrogram.types import Message
+from imdb import IMDb
 
-API_ID = int(os.getenv("API_ID", "15191874"))
-API_HASH = os.getenv("API_HASH", "3037d39233c6fad9b80d83bb8a339a07")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "6677023637:AAES7_yErqBDZY7wQP1EOyIGhpAN1d9fY5o")
+# Bot Configuration
+BOT_TOKEN = "7727908791:AAFz7vFBuJTfcRneBEJmceTy775xIjH2MPY"
+API_ID = int("15191874")
+API_HASH = "3037d39233c6fad9b80d83bb8a339a07"
 
-# Directory to save the downloaded images
-DOWNLOAD_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
+# Directories
+IMDB_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
+USER_DIR = "/www/wwwroot/Jnmovies.site/ss/"
+BASE_URL = "https://jnmovies.site/"
 
-# Ensure the directory exists
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+# Ensure directories exist
+os.makedirs(IMDB_DIR, exist_ok=True)
+os.makedirs(USER_DIR, exist_ok=True)
 
-# Initialize the Pyrogram client
-app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Initialize bot
+bot = Client("ImageHostBot", bot_token=BOT_TOKEN, api_id=API_ID, api_hash=API_HASH)
+imdb = IMDb()
 
-# Initialize IMDb
-ia = IMDb()
+# Function to generate unique filenames
+def get_unique_filename(directory, filename):
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    while os.path.exists(os.path.join(directory, filename)):
+        filename = f"{base}_{counter}{ext}"
+        counter += 1
+    return filename
 
-# Function to download an image from a URL
-def download_image(url, file_name):
-    response = requests.get(url)
-    if response.status_code == 200:
-        file_path = os.path.join(DOWNLOAD_DIR, file_name)
-        with open(file_path, "wb") as file:
-            file.write(response.content)
-        return file_path
-    return None
+# Handle IMDb Links
+@bot.on_message(filters.text & filters.private & filters.regex(r"imdb.com/title/tt\d+"))
+async def handle_imdb(client: Client, message: Message):
+    imdb_url = message.text.strip()
+    
+    # Extract IMDb ID
+    match = re.search(r"tt\d+", imdb_url)
+    if not match:
+        await message.reply_text("Invalid IMDb link!")
+        return
 
-# Function to extract IMDb movie ID from URL
-def extract_imdb_id(url):
-    if "imdb.com/title/tt" in url:
-        return url.split("tt")[1].split("/")[0]
-    return None
+    imdb_id = match.group()
+    movie = imdb.get_movie(imdb_id[2:])  # IMDbPY uses only the digits
 
-# Handler for messages containing an IMDb link
-@app.on_message(filters.text & filters.private)
-async def handle_message(client, message):
-    url = message.text.strip()
-    imdb_id = extract_imdb_id(url)
-    if imdb_id:
-        # Fetch movie details using IMDb
-        movie = ia.get_movie(imdb_id)
-        if movie:
-            # Get movie title and poster URL
-            title = movie.get("title", "unknown_title").replace(" ", "_").replace("/", "_")
-            poster_url = movie.get("full-size cover url", movie.get("cover url"))
-            if poster_url:
-                # Download the poster
-                file_name = f"{title}.jpg"
-                file_path = download_image(poster_url, file_name)
-                if file_path:
-                    # Send the poster back to the user
-                    await message.reply_photo(file_path, caption=f"Poster for: {movie.get('title')}")
-                    os.remove(file_path)  # Clean up the file
-                else:
-                    await message.reply_text("Failed to download the poster. Please try again.")
-            else:
-                await message.reply_text("No poster found for this movie.")
-        else:
-            await message.reply_text("Failed to fetch movie details. Please check the IMDb link.")
-    else:
-        await message.reply_text("Please send a valid IMDb link.")
+    if not movie:
+        await message.reply_text("Couldn't fetch IMDb details!")
+        return
+
+    title = movie["title"]
+    poster_url = movie.get("full-size cover url")
+
+    if not poster_url:
+        await message.reply_text("No poster found for this movie!")
+        return
+
+    # Download poster
+    response = requests.get(poster_url)
+    if response.status_code != 200:
+        await message.reply_text("Failed to download poster!")
+        return
+
+    # Save image
+    filename = get_unique_filename(IMDB_DIR, f"{title.replace(' ', '_')}.jpg")
+    filepath = os.path.join(IMDB_DIR, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(response.content)
+
+    # Send image link
+    image_url = f"{BASE_URL}wp-content/uploads/{filename}"
+    await message.reply_text(f"Poster saved! ✅\n[View Image]({image_url})", disable_web_page_preview=True)
+
+# Handle User-Uploaded Images
+@bot.on_message(filters.document & filters.private)
+async def handle_image(client: Client, message: Message):
+    doc = message.document
+    if not doc.mime_type.startswith("image/"):
+        await message.reply_text("Please send an image file!")
+        return
+
+    filename = get_unique_filename(USER_DIR, doc.file_name)
+    filepath = os.path.join(USER_DIR, filename)
+
+    await message.reply_text("Saving image... ⏳")
+    await message.download(file_name=filepath)
+
+    # Send image link
+    image_url = f"{BASE_URL}ss/{filename}"
+    await message.reply_text(f"Image saved! ✅\n[View Image]({image_url})", disable_web_page_preview=True)
 
 # Start the bot
 print("Bot is running...")
-app.run()
+bot.run()
