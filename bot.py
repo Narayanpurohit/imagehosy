@@ -1,11 +1,15 @@
-
 import os
 import re
-import requests
+import logging
+import aiohttp
 import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from imdb import IMDb
+
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Bot Configuration
 BOT_TOKEN = "7727908791:AAFz7vFBuJTfcRneBEJmceTy775xIjH2MPY"
@@ -34,30 +38,34 @@ def get_unique_filename(directory, filename):
         counter += 1
     return filename
 
-# Log when the bot starts
-@bot.on_message(filters.command("start") & filters.private)
+# Sanitize filenames
+def sanitize_filename(filename):
+    return re.sub(r"[^\w\-_.]", "", filename)
+
+# Start command
+@bot.on_message(filters.command("start"))
 async def start(client: Client, message: Message):
     await message.reply_text("Hello! Send me an IMDb link or an image file to host.")
 
 # Handle IMDb Links
-@bot.on_message(filters.text & filters.private & filters.regex(r"imdb\.com/title/tt\d+"))
+@bot.on_message(filters.text & filters.regex(r"imdb\.com/title/tt\d+"))
 async def handle_imdb(client: Client, message: Message):
     imdb_url = message.text.strip()
 
     # Extract IMDb ID
-    match = re.search(r"tt\d+", imdb_url)
+    match = re.search(r"title/(tt\d+)", imdb_url)
     if not match:
         await message.reply_text("Invalid IMDb link!")
         return
 
-    imdb_id = match.group()
+    imdb_id = match.group(1)
     movie = imdb.get_movie(imdb_id[2:])  # IMDbPY uses only the digits
 
     if not movie:
         await message.reply_text("Couldn't fetch IMDb details!")
         return
 
-    title = movie["title"].replace(" ", "_")
+    title = sanitize_filename(movie["title"].replace(" ", "_"))
     poster_url = movie.get("full-size cover url")
 
     if not poster_url:
@@ -65,9 +73,15 @@ async def handle_imdb(client: Client, message: Message):
         return
 
     # Download poster
-    response = requests.get(poster_url)
-    if response.status_code != 200:
-        await message.reply_text("Failed to download poster!")
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(poster_url) as response:
+                if response.status != 200:
+                    await message.reply_text("Failed to download poster!")
+                    return
+                content = await response.read()
+    except Exception as e:
+        await message.reply_text(f"Failed to download poster: {e}")
         return
 
     # Save image
@@ -75,21 +89,21 @@ async def handle_imdb(client: Client, message: Message):
     filepath = os.path.join(IMDB_DIR, filename)
 
     with open(filepath, "wb") as f:
-        f.write(response.content)
+        f.write(content)
 
     # Send image link
     image_url = f"{BASE_URL}wp-content/uploads/{filename}"
     await message.reply_text(f"Poster saved! ✅\n[View Image]({image_url})", disable_web_page_preview=True)
 
-# Handle User-Uploaded Images (Only as Files)
-@bot.on_message(filters.document & filters.private)
+# Handle User-Uploaded Images
+@bot.on_message(filters.document)
 async def handle_image(client: Client, message: Message):
     doc = message.document
     if not doc.mime_type.startswith("image/"):
         await message.reply_text("Please send an image file!")
         return
 
-    filename = get_unique_filename(USER_DIR, doc.file_name)
+    filename = sanitize_filename(doc.file_name or f"image_{message.message_id}.jpg")
     filepath = os.path.join(USER_DIR, filename)
 
     await message.reply_text("Saving image... ⏳")
@@ -99,7 +113,7 @@ async def handle_image(client: Client, message: Message):
     image_url = f"{BASE_URL}ss/{filename}"
     await message.reply_text(f"Image saved! ✅\n[View Image]({image_url})", disable_web_page_preview=True)
 
-# Start the bot with logging
+# Start the bot
 if __name__ == "__main__":
-    print("Bot is starting...")
+    logger.info("Bot is starting...")
     bot.run()
