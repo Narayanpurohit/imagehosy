@@ -16,16 +16,36 @@ app = Client("image_host_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_T
 IMAGE_DIR = "/www/wwwroot/Jnmovies.site/uploads/"
 
 
+def get_next_image_number():
+    """Finds the next available image number in the directory."""
+    existing_files = [f for f in os.listdir(UPLOADS_DIR) if f.split(".")[0].isdigit()]
+    existing_numbers = sorted([int(f.split(".")[0]) for f in existing_files if f.split(".")[0].isdigit()])
+    
+    if not existing_numbers:
+        return 1  # Start from 1 if no images exist
+    
+    return existing_numbers[-1] + 1  # Get the next number
+
+def save_uploaded_image(file, original_extension):
+    """Saves the image with a sequential numeric filename and returns the URL."""
+    next_number = get_next_image_number()
+    file_name = f"{next_number}.{original_extension}"
+    save_path = os.path.join(UPLOADS_DIR, file_name)
+
+    file.rename(save_path)  # Move file to correct path
+
+    return f"https://jnmovies.site/wp-content/screnshots/{file_name}"
+
 # ✅ Handler for User-Uploaded Images
 @app.on_message(filters.photo)
 async def handle_image(client: Client, message: Message):
     """Handles user-uploaded images, saves them, and provides a direct link."""
-    file_path = await message.download(file_name=os.path.join(IMAGE_DIR, f"{message.photo.file_id}.jpg"))
-    
-    image_url = f"https://jnmovies.site/uploads/{os.path.basename(file_path)}"
-    
-    # Send the URL back to the user
-    await message.reply_text(f"Here is your image link: {image_url}")
+    file = await message.download()
+    original_extension = file.split(".")[-1]  # Get file extension (e.g., jpg, png, webp)
+
+    saved_url = save_uploaded_image(file, original_extension)
+
+    await message.reply_text(f"✅ Your image has been saved:\n{saved_url}")
 
 
 import os
@@ -37,7 +57,7 @@ from imdb import Cinemagoer
 ia = Cinemagoer()
 
 # 🔹 Define Image Storage Path
-IMDB_IMAGE_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
+IMDB_IMAGE_DIR = "/www/wwwroot/jnmovies.site/wp-content/screnshots/"
 os.makedirs(IMDB_IMAGE_DIR, exist_ok=True)  # Ensure directory exists
 
 def fetch_imdb_data(imdb_url):
@@ -114,7 +134,7 @@ async def handle_message(client, message):
         saved_poster = download_imdb_poster(poster_url, title)
 
         if saved_poster:
-            poster_url = f"https://jnmovies.site/wp-content/uploads/{os.path.basename(saved_poster)}"
+            poster_url = f"https://jnmovies.site/wp-content/screnshots/{os.path.basename(saved_poster)}"
             await message.reply_text(f"🎬 IMDb Poster Saved:\n{poster_url}")
         else:
             await message.reply_text("❌ Failed to download IMDb poster.")
