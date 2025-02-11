@@ -29,37 +29,33 @@ async def handle_image(client: Client, message: Message):
     image_url = f"https://Jnmovies.site/wp-content/uploads/{os.path.basename(file_path)}"
     await message.reply_text(f"Here is your image link: {image_url}")
 
-def fetch_imdb_image(imdb_url):
+    def fetch_imdb_image(imdb_url):
     """Fetches the movie title and main poster URL from IMDb using IMDbPY."""
     ia = IMDb()
 
-    # Extract IMDb ID (handles both normal and mobile links)
-    match = re.search(r'tt(\d+)', imdb_url)
-    if not match:
-        print("Invalid IMDb link format")  # Debugging
+    # Extract IMDb ID from the URL (works for both normal & mobile links)
+    imdb_id_match = re.search(r'tt(\d+)', imdb_url)
+    imdb_id = imdb_id_match.group(1) if imdb_id_match else None
+
+    if not imdb_id:
+        print("⚠️ Invalid IMDb link!")  # Debugging
         return None, "Invalid IMDb link"
 
-    imdb_id = match.group(1).lstrip("0")  # Remove leading zeros
     print(f"Fetching IMDb data for ID: {imdb_id}")  # Debugging
 
     try:
         movie = ia.get_movie(imdb_id)  # IMDbPY expects numeric ID
-        if not movie:
-            print("IMDb data not found")  # Debugging
-            return None, "Image not found"
-
-        if "title" not in movie or "full-size cover url" not in movie:
-            print("Title or image not found")  # Debugging
+        if not movie or "title" not in movie or "full-size cover url" not in movie:
+            print("❌ IMDb data not found")  # Debugging
             return None, "Image not found"
 
         movie_name = movie["title"].replace(" ", "_")  # Format title
         image_url = movie["full-size cover url"]
-        print(f"Movie Name: {movie_name}, Image URL: {image_url}")  # Debugging
+        print(f"✅ Movie Name: {movie_name}, Image URL: {image_url}")  # Debugging
         return image_url, movie_name
     except Exception as e:
-        print(f"Error fetching IMDb data: {str(e)}")  # Debugging
+        print(f"⚠️ Error fetching IMDb data: {str(e)}")  # Debugging
         return None, f"Error fetching IMDb data: {str(e)}"
-
 def save_imdb_image(image_url, movie_name):
     """Downloads and saves the IMDb image, handling duplicates."""
     ext = image_url.split(".")[-1].split("?")[0]  # Get file extension
