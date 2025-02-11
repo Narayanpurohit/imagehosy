@@ -56,7 +56,7 @@ from imdb import Cinemagoer
 ia = Cinemagoer()
 
 # 🔹 Define Image Storage Path
-IMDB_IMAGE_DIR = "/www/wwwroot/jnmovies.site/wp-content/uploads/"
+IMDB_IMAGE_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
 os.makedirs(IMDB_IMAGE_DIR, exist_ok=True)  # Ensure directory exists
 
 def fetch_imdb_data(imdb_url):
