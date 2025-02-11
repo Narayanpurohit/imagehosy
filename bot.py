@@ -6,7 +6,7 @@ from pyrogram.types import Message
 API_ID =15191874 
 API_HASH = "3037d39233c6fad9b80d83bb8a339a07" 
 BOT_TOKEN = "7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk"  
-IMAGE_DIR = '/www/wwwroot/jnmovies.site/wp-content/uploads'
+IMAGE_DIR = '/www/wwwroot/Jnmovies.site/wp-content/uploads'
 
 # Ensure the directory exists
 os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -19,7 +19,7 @@ async def handle_image(client: Client, message: Message):
     file_path = await message.download(file_name=os.path.join(IMAGE_DIR, f"{message.photo.file_id}.jpg"))
     
     # Construct the URL (assuming your domain is correctly set up)
-    image_url = f"https://jnmovies.site/wp-content/uploads/{os.path.basename(file_path)}"
+    image_url = f"https://Jnmovies.site/wp-content/uploads/{os.path.basename(file_path)}"
     
     # Send the URL back to the user
     await message.reply_text(f"Here is your image link: {image_url}")
