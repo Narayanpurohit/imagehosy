@@ -114,7 +114,7 @@ async def handle_message(client, message):
         saved_poster = download_imdb_poster(poster_url, title)
 
         if saved_poster:
-            poster_url = f"https://jnmovies.site/wp-content/uploads/imdb/{os.path.basename(saved_poster)}"
+            poster_url = f"https://jnmovies.site/wp-content/uploads/{os.path.basename(saved_poster)}"
             await message.reply_text(f"🎬 IMDb Poster Saved:\n{poster_url}")
         else:
             await message.reply_text("❌ Failed to download IMDb poster.")
