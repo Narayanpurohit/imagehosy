@@ -29,7 +29,7 @@ async def handle_image(client: Client, message: Message):
     image_url = f"https://Jnmovies.site/wp-content/uploads/{os.path.basename(file_path)}"
     await message.reply_text(f"Here is your image link: {image_url}")
 
-    def fetch_imdb_image(imdb_url):
+def fetch_imdb_image(imdb_url):
     """Fetches the movie title and main poster URL from IMDb using IMDbPY."""
     ia = IMDb()
 
@@ -56,6 +56,8 @@ async def handle_image(client: Client, message: Message):
     except Exception as e:
         print(f"⚠️ Error fetching IMDb data: {str(e)}")  # Debugging
         return None, f"Error fetching IMDb data: {str(e)}"
+
+
 def save_imdb_image(image_url, movie_name):
     """Downloads and saves the IMDb image, handling duplicates."""
     ext = image_url.split(".")[-1].split("?")[0]  # Get file extension
