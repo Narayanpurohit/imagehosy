@@ -14,32 +14,36 @@ app = Client("image_host_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_T
 
 # 🔹 Define Image Storage Paths
 UPLOADS_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
-IMDB_IMAGE_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/imdb/"
-os.makedirs(UPLOADS_DIR, exist_ok=True)
-os.makedirs(IMDB_IMAGE_DIR, exist_ok=True)
+
+
+# ✅ Handler for User-Uploaded Images
+@app.on_message(filters.photo)
+async def handle_image(client: Client, message: Message):
+    """Handles user-uploaded images, saves them, and provides a direct link."""
+    file = await message.download()
+    original_name = f"{message.photo.file_id}.jpg"  # Generates unique filename
+
+    saved_url = save_uploaded_image(file, original_name)
+
+    await message.reply_text(f"✅ Your image has been saved:\n{saved_url}")
+
+
+import os
+import re
+import requests
+from imdb import Cinemagoer
 
 # 🔹 IMDbPY Setup
 ia = Cinemagoer()
 
-# ✅ Function to Save User-Uploaded Images
-def save_uploaded_image(file, original_name):
-    """Saves user-uploaded images with a unique name and returns the URL."""
-    file_ext = original_name.split(".")[-1]
-    base_name = os.path.splitext(original_name)[0].replace(" ", "_").replace("/", "_")
-    save_path = os.path.join(UPLOADS_DIR, f"{base_name}.{file_ext}")
+# 🔹 Define Image Storage Path
+IMDB_IMAGE_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
+os.makedirs(IMDB_IMAGE_DIR, exist_ok=True)  # Ensure directory exists
 
-    # Handle duplicate filenames
-    counter = 1
-    while os.path.exists(save_path):
-        save_path = os.path.join(UPLOADS_DIR, f"{base_name}_{counter}.{file_ext}")
-        counter += 1
-
-    file.rename(save_path)  # Move file to correct path
-    return f"https://jnmovies.site/wp-content/uploads/{os.path.basename(save_path)}"
-
-# ✅ IMDb Scraper Functions
 def fetch_imdb_data(imdb_url):
     """Fetches IMDb movie title and poster URL using IMDbPY."""
+    
+    # Extract IMDb ID (Works for both normal & mobile IMDb links)
     imdb_id_match = re.search(r'tt(\d+)', imdb_url)
     imdb_id = imdb_id_match.group(1) if imdb_id_match else None
 
@@ -55,6 +59,7 @@ def fetch_imdb_data(imdb_url):
             print("❌ IMDb data not found")
             return None, None
 
+        # Extract movie title & poster URL
         title = movie.get("title", "Unknown_Title").replace(" ", "_").replace("/", "_")
         poster_url = movie.get("full-size cover url", None)
 
@@ -67,39 +72,29 @@ def fetch_imdb_data(imdb_url):
 
 def download_imdb_poster(poster_url, movie_title):
     """Downloads and saves the IMDb poster, handling duplicates."""
+    
     if not poster_url:
-        return None
+        return None  # No poster available
 
-    ext = poster_url.split(".")[-1].split("?")[0]
+    ext = poster_url.split(".")[-1].split("?")[0]  # Get file extension
     file_name = f"{movie_title}.{ext}"
-    save_path = os.path.join(IMDB_IMAGE_DIR, file_name)
+    file_path = os.path.join(IMDB_IMAGE_DIR, file_name)
 
-    # Handle duplicate filenames
+    # Check for duplicate filenames
     counter = 1
-    while os.path.exists(save_path):
-        save_path = os.path.join(IMDB_IMAGE_DIR, f"{movie_title}_{counter}.{ext}")
+    while os.path.exists(file_path):
+        file_path = os.path.join(IMDB_IMAGE_DIR, f"{movie_title}_{counter}.{ext}")
         counter += 1
 
-    print(f"⬇️ Downloading poster: {poster_url} → {save_path}")
+    print(f"⬇️ Downloading poster: {poster_url} → {file_path}")
 
     response = requests.get(poster_url, stream=True)
     if response.status_code == 200:
-        with open(save_path, "wb") as file:
+        with open(file_path, "wb") as file:
             for chunk in response.iter_content(1024):
                 file.write(chunk)
-        return save_path
+        return file_path  # Return saved file path
     return None
-
-# ✅ Handler for User-Uploaded Images
-@app.on_message(filters.photo)
-async def handle_image(client: Client, message: Message):
-    """Handles user-uploaded images, saves them, and provides a direct link."""
-    file = await message.download()
-    original_name = f"{message.photo.file_id}.jpg"  # Generates unique filename
-
-    saved_url = save_uploaded_image(file, original_name)
-
-    await message.reply_text(f"✅ Your image has been saved:\n{saved_url}")
 
 # ✅ Handler for IMDb Links
 @app.on_message(filters.text)
