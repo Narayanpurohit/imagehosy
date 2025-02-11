@@ -13,7 +13,7 @@ BOT_TOKEN = "7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk"
 app = Client("image_host_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # 🔹 Define Image Storage Paths
-IMAGE_DIR = "/www/wwwroot/Jnmovies.site/uploads/"
+UPLOADS_DIR = "/www/wwwroot/Jnmovies.site/uploads/"
 
 
 def get_next_image_number():
