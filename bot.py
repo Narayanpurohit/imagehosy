@@ -4,6 +4,7 @@ import requests
 from imdb import Cinemagoer
 from pyrogram import Client, filters
 from pyrogram.types import Message
+import shutil  # ✅ Added this import
 
 # 🔹 Pyrogram Bot Setup
 API_ID = 15191874
@@ -26,27 +27,25 @@ def get_next_image_number():
     
     return existing_numbers[-1] + 1  # Get the next number
 
-def save_uploaded_image(file, original_extension):
+def save_uploaded_image(file_path):
     """Saves the image with a sequential numeric filename and returns the URL."""
     next_number = get_next_image_number()
-    file_name = f"{next_number}.{original_extension}"
+    file_extension = file_path.split(".")[-1]  # Extract the extension
+    file_name = f"{next_number}.{file_extension}"
     save_path = os.path.join(UPLOADS_DIR, file_name)
 
-    file.rename(save_path)  # Move file to correct path
+    # ✅ Use shutil.move() to move the file
+    shutil.move(file_path, save_path)
 
-    return f"https://jnmovies.site/wp-content/screnshots/{file_name}"
-
-# ✅ Handler for User-Uploaded Images
+    return f"https://jnmovies.site/wp-content/uploads/{file_name}"
 @app.on_message(filters.photo)
 async def handle_image(client: Client, message: Message):
     """Handles user-uploaded images, saves them, and provides a direct link."""
-    file = await message.download()
-    original_extension = file.split(".")[-1]  # Get file extension (e.g., jpg, png, webp)
+    file_path = await message.download()  # ✅ Now file_path is a string
 
-    saved_url = save_uploaded_image(file, original_extension)
+    saved_url = save_uploaded_image(file_path)  # ✅ Pass file_path instead of file object
 
     await message.reply_text(f"✅ Your image has been saved:\n{saved_url}")
-
 
 import os
 import re
