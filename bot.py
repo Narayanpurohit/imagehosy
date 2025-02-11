@@ -8,7 +8,7 @@ API_ID =15191874
 API_HASH = "3037d39233c6fad9b80d83bb8a339a07" 
 BOT_TOKEN = "7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk"  
 IMAGE_DIR = '/www/wwwroot/Jnmovies.site/wp-content/uploads'
-
+IMDB_IMAGE_DIR='/www/wwwroot/Jnmovies.site/wp-content/uploads'
 # Ensure the directory exists
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
@@ -24,73 +24,71 @@ async def handle_image(client: Client, message: Message):
     
     # Send the URL back to the user
     await message.reply_text(f"Here is your image link: {image_url}")
+from imdb import IMDb
 
+def fetch_imdb_image(imdb_url):
+    """Fetches the movie title and main poster URL from IMDb using IMDbPY."""
+    ia = IMDb()
 
-import requests
-from bs4 import BeautifulSoup
-import re
-import os
+    # Extract IMDb ID from the URL
+    match = re.search(r'tt\d+', imdb_url)
+    if not match:
+        return None, "Invalid IMDb link"
 
-# Directory for saving IMDb posters
-IMDB_POSTER_DIR = '/www/wwwroot/Jnmovies.site/screenshots/'
-os.makedirs(IMDB_POSTER_DIR, exist_ok=True)
+    imdb_id = match.group(0)
 
-@app.on_message(filters.text & filters.regex(r'https?://www\.imdb\.com/title/'))
-async def handle_imdb_link(client: Client, message: Message):
     try:
-        # Extract IMDb link from the message
-        imdb_url = message.text
+        movie = ia.get_movie(imdb_id[2:])  # IMDbPY uses numeric IDs only
+        if not movie or "title" not in movie or "full-size cover url" not in movie:
+            return None, "Image not found"
 
-        # Fetch the IMDb page
-        response = requests.get(imdb_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Scrape the movie title and year
-        title_element = soup.find('meta', property='og:title')
-        if not title_element:
-            await message.reply_text("Could not find the title for this IMDb link.")
-            return
-
-        title_data = title_element['content']  # Format: "Movie Title (Year) - IMDb"
-        title_match = re.match(r"(.+?) \((\d{4})\)", title_data)
-        if not title_match:
-            await message.reply_text("Could not extract title and year from the IMDb link.")
-            return
-
-        title = title_match.group(1).strip().replace(" ", "_")  # Replace spaces with underscores
-        year = title_match.group(2)
-
-        # Scrape the poster image URL
-        poster_element = soup.find('meta', property='og:image')
-        if not poster_element:
-            await message.reply_text("Could not find the poster for this IMDb link.")
-            return
-
-        poster_url = poster_element['content']
-
-        # Create the filename
-        filename = f"{title}_{year}.jpg"
-        poster_path = os.path.join(IMDB_POSTER_DIR, filename)
-
-        # Check if the file already exists
-        if os.path.exists(poster_path):
-            image_url = f"https://Jnmovies.site/screenshots/{filename}"
-            await message.reply_text(f"Here is the poster image: {image_url}")
-            return
-
-        # Download the poster image
-        poster_response = requests.get(poster_url)
-        with open(poster_path, 'wb') as f:
-            f.write(poster_response.content)
-
-        # Construct the image URL
-        image_url = f"https://Jnmovies.site/screenshots/{filename}"
-
-        # Send the image link back to the user
-        await message.reply_text(f"Here is the poster image: {image_url}")
-
+        movie_name = movie["title"].replace(" ", "_")  # Format title
+        image_url = movie["full-size cover url"]
+        return image_url, movie_name
     except Exception as e:
-        await message.reply_text(f"An error occurred: {str(e)}")
+        return None, f"Error fetching IMDb data: {str(e)}"
+        
+import requests
+
+def save_imdb_image(image_url, movie_name):
+    """Downloads and saves the IMDb image, handling duplicates."""
+    ext = image_url.split(".")[-1].split("?")[0]  # Get file extension
+    base_name = f"{movie_name}.{ext}"
+    save_path = os.path.join(IMDB_IMAGE_DIR, base_name)
+
+    # Avoid duplicate filenames
+    counter = 1
+    while os.path.exists(save_path):
+        save_path = os.path.join(IMDB_IMAGE_DIR, f"{movie_name}_{counter}.{ext}")
+        counter += 1
+
+    response = requests.get(image_url, stream=True)
+    if response.status_code == 200:
+        with open(save_path, "wb") as file:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+        return save_path
+    return None
+    
+@app.on_message(filters.text & filters.regex(r"https?://(www\.)?imdb\.com/title/tt\d+"))
+async def handle_imdb_link(client: Client, message: Message):
+    imdb_url = message.text.strip()
+    image_url, movie_name = fetch_imdb_image(imdb_url)
+
+    if not image_url:
+        await message.reply_text("Could not fetch IMDb image.")
+        return
+
+    save_path = save_imdb_image(image_url, movie_name)
+    if not save_path:
+        await message.reply_text("Failed to download IMDb image.")
+        return
+
+    # Construct the image URL
+    imdb_image_url = f"https://Jnmovies.site/wp-content/uploads/imdb/{os.path.basename(save_path)}"
+
+    await message.reply_text(f"IMDb Image Saved:\n{imdb_image_url}")
+
 
 print("Bot is running...")
 app.run()
