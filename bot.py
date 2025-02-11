@@ -56,7 +56,7 @@ from imdb import Cinemagoer
 ia = Cinemagoer()
 
 # 🔹 Define Image Storage Path
-IMDB_IMAGE_DIR = "/www/wwwroot/jnmovies.site/wp-content/screnshots/"
+IMDB_IMAGE_DIR = "/www/wwwroot/jnmovies.site/wp-content/uploads/"
 os.makedirs(IMDB_IMAGE_DIR, exist_ok=True)  # Ensure directory exists
 
 def fetch_imdb_data(imdb_url):
@@ -133,7 +133,7 @@ async def handle_message(client, message):
         saved_poster = download_imdb_poster(poster_url, title)
 
         if saved_poster:
-            poster_url = f"https://jnmovies.site/wp-content/screnshots/{os.path.basename(saved_poster)}"
+            poster_url = f"https://jnmovies.site/wp-content/uploads/{os.path.basename(saved_poster)}"
             await message.reply_text(f"🎬 IMDb Poster Saved:\n{poster_url}")
         else:
             await message.reply_text("❌ Failed to download IMDb poster.")
