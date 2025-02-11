@@ -13,7 +13,7 @@ BOT_TOKEN = "7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk"
 app = Client("image_host_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # 🔹 Define Image Storage Paths
-UPLOADS_DIR = "/www/wwwroot/Jnmovies.site/uploads/"
+IMAGE_DIR = "/www/wwwroot/Jnmovies.site/uploads/"
 
 
 # ✅ Handler for User-Uploaded Images
