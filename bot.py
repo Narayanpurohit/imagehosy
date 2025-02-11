@@ -13,19 +13,19 @@ BOT_TOKEN = "7727908791:AAHUDR2RyXynqjnTgGkeN1zOHf79GanWCqk"
 app = Client("image_host_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # 🔹 Define Image Storage Paths
-UPLOADS_DIR = "/www/wwwroot/Jnmovies.site/wp-content/uploads/"
+UPLOADS_DIR = "/www/wwwroot/Jnmovies.site/uploads/"
 
 
 # ✅ Handler for User-Uploaded Images
 @app.on_message(filters.photo)
 async def handle_image(client: Client, message: Message):
     """Handles user-uploaded images, saves them, and provides a direct link."""
-    file = await message.download()
-    original_name = f"{message.photo.file_id}.jpg"  # Generates unique filename
-
-    saved_url = save_uploaded_image(file, original_name)
-
-    await message.reply_text(f"✅ Your image has been saved:\n{saved_url}")
+    file_path = await message.download(file_name=os.path.join(IMAGE_DIR, f"{message.photo.file_id}.jpg"))
+    
+    image_url = f"https://jnmovies.site/uploads/{os.path.basename(file_path)}"
+    
+    # Send the URL back to the user
+    await message.reply_text(f"Here is your image link: {image_url}")
 
 
 import os
