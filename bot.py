@@ -37,7 +37,7 @@ def save_uploaded_image(file_path):
     # ✅ Use shutil.move() to move the file
     shutil.move(file_path, save_path)
 
-    return f"https://jnmovies.site/wp-content/uploads/{file_name}"
+    return f"https://jnmovies.site/uploads/{file_name}"
 @app.on_message(filters.photo)
 async def handle_image(client: Client, message: Message):
     """Handles user-uploaded images, saves them, and provides a direct link."""
