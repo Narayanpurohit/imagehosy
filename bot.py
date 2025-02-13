@@ -51,7 +51,7 @@ async def handle_image(client: Client, message: Message):
     wp_url = upload_to_wordpress(file_path)
 
     if wp_url:
-        await message.reply_text(f"✅ Your image has been uploaded:\n{wp_url}")
+        await message.reply_text(f"`{wp_url}`")
     else:
         await message.reply_text("❌ Failed to upload image to WordPress.")
 
@@ -116,7 +116,7 @@ async def handle_message(client, message):
             wp_url = upload_to_wordpress(saved_poster)
 
             if wp_url:
-                await message.reply_text(f"🎬 IMDb Poster Uploaded:\n{wp_url}")
+                await message.reply_text(f"`{wp_url}`")
             else:
                 await message.reply_text("❌ Failed to upload IMDb poster.")
         else:
